@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExpenseIQ — Personal Expense Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-icon">💰</span>
+    <span class="brand-name">ExpenseIQ</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-link active" data-screen="dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+    <a href="#" class="nav-link" data-screen="add">
+      <span class="nav-icon">➕</span> Add Expense
+    </a>
+    <a href="#" class="nav-link" data-screen="expenses">
+      <span class="nav-icon">📋</span> View Expenses
+    </a>
+    <a href="#" class="nav-link" data-screen="budget">
+      <span class="nav-icon">🎯</span> Budget Tracker
+    </a>
+    <a href="#" class="nav-link" data-screen="reports">
+      <span class="nav-icon">📈</span> Reports
+    </a>
+    <a href="#" class="nav-link" data-screen="io">
+      <span class="nav-icon">💾</span> Save / Load
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="month-budget-mini" id="sidebar-budget-mini"></div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+<div class="layout">
+  <!-- Top bar -->
+  <header class="topbar">
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu">☰</button>
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-month" id="topbar-month"></div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- ─── DASHBOARD ─── -->
+    <section id="screen-dashboard" class="screen active">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-sub" id="dash-greeting"></p>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="two-col">
+        <div class="card chart-card">
+          <div class="card-header">
+            <span class="card-title">Spending by Category</span>
+            <span class="chip" id="dash-month-label"></span>
+          </div>
+          <div class="chart-wrap"><canvas id="catBarChart"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <div class="card-header">
+            <span class="card-title">Category Distribution</span>
+          </div>
+          <div class="chart-wrap"><canvas id="catDonutChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Expenses</span>
+          <button class="text-btn" onclick="showScreen('expenses')">View all →</button>
+        </div>
+        <div id="dash-recent-list"></div>
+      </div>
+    </section>
+
+    <!-- ─── ADD EXPENSE ─── -->
+    <section id="screen-add" class="screen">
+      <div class="page-header">
+        <h1 class="page-title">Add Expense</h1>
+        <p class="page-sub">Log a new expense to your tracker</p>
+      </div>
+
+      <div class="card form-card">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="in-date">📅 Date</label>
+            <input class="form-input" type="date" id="in-date" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="in-cat">🏷️ Category</label>
+            <select class="form-input" id="in-cat">
+              <option value="">— Select category —</option>
+              <option value="Food">🍕 Food</option>
+              <option value="Travel">✈️ Travel</option>
+              <option value="Shopping">🛍️ Shopping</option>
+              <option value="Entertainment">🎬 Entertainment</option>
+              <option value="Health">💊 Health</option>
+              <option value="Utilities">💡 Utilities</option>
+              <option value="Education">📚 Education</option>
+              <option value="Rent">🏠 Rent</option>
+              <option value="Other">📦 Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="in-amount">💵 Amount (₹)</label>
+            <input class="form-input" type="number" id="in-amount" placeholder="0.00" min="0.01" step="0.01" />
+          </div>
+          <div class="form-group form-group--full">
+            <label class="form-label" for="in-desc">📝 Description</label>
+            <input class="form-input" type="text" id="in-desc" placeholder="e.g. Lunch with friends" maxlength="120" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" onclick="resetAddForm()">Clear</button>
+          <button class="btn btn-primary" onclick="addExpense()">Add Expense</button>
+        </div>
+        <div id="add-feedback" class="feedback hidden"></div>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem">
+        <div class="card-header"><span class="card-title">Quick-add recent categories</span></div>
+        <div class="quick-cats" id="quick-cats"></div>
+      </div>
+    </section>
+
+    <!-- ─── VIEW EXPENSES ─── -->
+    <section id="screen-expenses" class="screen">
+      <div class="page-header">
+        <h1 class="page-title">All Expenses</h1>
+        <p class="page-sub" id="expenses-count-label"></p>
+      </div>
+
+      <div class="card filter-bar">
+        <div class="filter-row">
+          <div class="form-group">
+            <label class="form-label">Filter by category</label>
+            <select class="form-input" id="filter-cat" onchange="renderExpenses()">
+              <option value="">All categories</option>
+              <option>Food</option><option>Travel</option><option>Shopping</option>
+              <option>Entertainment</option><option>Health</option><option>Utilities</option>
+              <option>Education</option><option>Rent</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Filter by month</label>
+            <input class="form-input" type="month" id="filter-month" onchange="renderExpenses()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sort by</label>
+            <select class="form-input" id="filter-sort" onchange="renderExpenses()">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="highest">Highest amount</option>
+              <option value="lowest">Lowest amount</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Search</label>
+            <input class="form-input" type="text" id="filter-search" placeholder="Search description…" oninput="renderExpenses()" />
+          </div>
+        </div>
+        <div class="filter-summary" id="filter-summary"></div>
+      </div>
+
+      <div class="card" id="expense-table-wrap">
+        <table class="expense-table" id="expense-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="expense-tbody"></tbody>
+        </table>
+        <div id="expense-empty" class="empty-state hidden">
+          <div class="empty-icon">🧾</div>
+          <div class="empty-title">No expenses found</div>
+          <div class="empty-sub">Try adjusting your filters or add a new expense.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── BUDGET ─── -->
+    <section id="screen-budget" class="screen">
+      <div class="page-header">
+        <h1 class="page-title">Budget Tracker</h1>
+        <p class="page-sub">Set and monitor your monthly spending limits</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Set Monthly Budget</span></div>
+          <div class="form-group" style="margin-top:.5rem">
+            <label class="form-label">Month</label>
+            <input class="form-input" type="month" id="bud-month" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Budget (₹)</label>
+            <input class="form-input" type="number" id="bud-amount" placeholder="e.g. 20000" min="1" />
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:.5rem" onclick="saveBudget()">Save Budget</button>
+          <div id="budget-feedback" class="feedback hidden"></div>
+        </div>
+
+        <div class="card" id="budget-status-card">
+          <div class="card-header"><span class="card-title">This Month's Status</span></div>
+          <div id="budget-status-body"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem">
+        <div class="card-header"><span class="card-title">Category Breakdown</span></div>
+        <div id="budget-cat-breakdown"></div>
+      </div>
+    </section>
+
+    <!-- ─── REPORTS ─── -->
+    <section id="screen-reports" class="screen">
+      <div class="page-header">
+        <h1 class="page-title">Reports</h1>
+        <p class="page-sub">Visualize spending trends over time</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Monthly Spending Trend</span>
+          <select class="form-input" id="trend-months" onchange="renderTrend()" style="width:auto;font-size:13px;padding:4px 8px">
+            <option value="6">Last 6 months</option>
+            <option value="12">Last 12 months</option>
+          </select>
+        </div>
+        <div class="chart-wrap" style="height:260px"><canvas id="trendChart"></canvas></div>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem">
+        <div class="card-header"><span class="card-title">Top Spending Days</span></div>
+        <div id="top-days-list"></div>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem">
+        <div class="card-header"><span class="card-title">Statistics</span></div>
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+    </section>
+
+    <!-- ─── SAVE / LOAD ─── -->
+    <section id="screen-io" class="screen">
+      <div class="page-header">
+        <h1 class="page-title">Save &amp; Load</h1>
+        <p class="page-sub">Export to CSV or import previously saved data</p>
+      </div>
+
+      <div class="io-grid">
+        <div class="card io-card">
+          <div class="io-icon">⬇️</div>
+          <h2 class="io-title">Export to CSV</h2>
+          <p class="io-desc">Download all your expenses as a <code>.csv</code> file. Each row contains: date, category, amount, description.</p>
+          <button class="btn btn-primary" onclick="exportCSV()">Download expenses.csv</button>
+        </div>
+
+        <div class="card io-card">
+          <div class="io-icon">⬆️</div>
+          <h2 class="io-title">Import from CSV</h2>
+          <p class="io-desc">Upload a previously exported <code>.csv</code> file to restore expenses. Expected columns: date, category, amount, description.</p>
+          <label class="btn btn-outline file-label">
+            Choose CSV file
+            <input type="file" id="csv-file" accept=".csv" onchange="importCSV(this)" style="display:none" />
+          </label>
+          <div id="import-feedback" class="feedback hidden" style="margin-top:.75rem"></div>
+        </div>
+
+        <div class="card io-card">
+          <div class="io-icon">📋</div>
+          <h2 class="io-title">Export Budget</h2>
+          <p class="io-desc">Save your monthly budget settings as a <code>.json</code> file for backup.</p>
+          <button class="btn btn-outline" onclick="exportBudgets()">Download budgets.json</button>
+        </div>
+
+        <div class="card io-card danger-card">
+          <div class="io-icon">🗑️</div>
+          <h2 class="io-title">Clear All Data</h2>
+          <p class="io-desc">Permanently delete all expenses and budgets. This action cannot be undone.</p>
+          <button class="btn btn-danger" onclick="clearAll()">Clear Everything</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem">
+        <div class="card-header"><span class="card-title">Data Summary</span></div>
+        <div id="io-summary"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal confirm -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="modal-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
